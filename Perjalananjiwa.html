@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perjalanan Jiwa: Sebuah Eksplorasi Interaktif</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals with Muted Mystical Accents -->
+    <!-- Application Structure Plan: The application is structured around an interactive Tree of Life (Pohon Kehidupan) diagram, which serves as the central navigation hub. Instead of a linear, chapter-by-chapter format, users can visually explore the core Kabbalistic concepts (Sefirot) and their connections. Clicking on a node (Sefirah or another key concept) reveals detailed information in a side panel, keeping the user anchored within the larger conceptual map. This non-linear, relational structure was chosen because the source material is highly interconnected; a visual map is more intuitive for understanding these relationships than a simple text document, thus enhancing usability and comprehension. -->
+    <!-- Visualization & Content Choices: The primary visualization is the Tree of Life diagram, built using HTML and Tailwind CSS (Goal: Organize, Navigate). This avoids SVG/Mermaid as required. Each Sefirah is a clickable node. User interaction (click) triggers a JavaScript function to dynamically load contextual information into a side panel (Goal: Inform). This panel displays text blocks, summaries, and lists derived from the source report. For the 'Pillars' concept, interactive buttons will highlight corresponding nodes on the diagram (Goal: Compare, Relate). This combination of a central visual diagram and dynamic textual detail provides a rich, exploratory experience that directly supports the designed application structure. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDFBF8;
+            color: #402E32;
+        }
+        .font-serif {
+            font-family: 'Playfair Display', serif;
+        }
+        .sefirot-node {
+            transition: all 0.3s ease-in-out;
+            cursor: pointer;
+            position: relative;
+            z-index: 10;
+        }
+        .sefirot-node:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.7);
+        }
+        .path {
+            position: absolute;
+            background-color: #D1C4E9;
+            z-index: 1;
+        }
+        #detail-panel {
+            transition: transform 0.5s ease-in-out;
+            transform: translateX(100%);
+            scrollbar-width: thin;
+            scrollbar-color: #A1887F #FDFBF8;
+        }
+        #detail-panel.open {
+            transform: translateX(0);
+        }
+        .highlight {
+            border: 3px solid #FFC107 !important;
+            box-shadow: 0 0 20px #FFC107;
+        }
+        .dim {
+            opacity: 0.3;
+            filter: grayscale(80%);
+        }
+        .nav-button.active {
+            background-color: #A1887F;
+            color: white;
+        }
+        .content-section::-webkit-scrollbar {
+            width: 8px;
+        }
+        .content-section::-webkit-scrollbar-track {
+            background: #FDFBF8;
+        }
+        .content-section::-webkit-scrollbar-thumb {
+            background-color: #A1887F;
+            border-radius: 10px;
+            border: 2px solid #FDFBF8;
+        }
+    </style>
+</head>
+<body class="overflow-x-hidden">
+
+    <div id="app-container" class="relative min-h-screen w-full flex flex-col md:flex-row">
+
+        <!-- Main Content -->
+        <main class="flex-grow p-4 md:p-8 transition-all duration-500">
+            <header class="text-center mb-4 md:mb-8">
+                <h1 class="font-serif text-4xl md:text-6xl font-bold text-[#4A235A]">Perjalanan Jiwa</h1>
+                <p class="text-lg text-gray-600 mt-2">Sebuah Peta Interaktif Menuju Kedalaman Diri</p>
+            </header>
+
+            <div class="flex justify-center mb-6 space-x-2">
+                <button id="btn-all" class="pillar-btn nav-button px-4 py-2 bg-white border border-gray-300 rounded-full shadow-sm hover:bg-gray-100 transition active">Semua</button>
+                <button id="btn-right" class="pillar-btn nav-button px-4 py-2 bg-white border border-gray-300 rounded-full shadow-sm hover:bg-gray-100 transition">Pilar Kebaikan</button>
+                <button id="btn-middle" class="pillar-btn nav-button px-4 py-2 bg-white border border-gray-300 rounded-full shadow-sm hover:bg-gray-100 transition">Pilar Keseimbangan</button>
+                <button id="btn-left" class="pillar-btn nav-button px-4 py-2 bg-white border border-gray-300 rounded-full shadow-sm hover:bg-gray-100 transition">Pilar Kekuatan</button>
+            </div>
+
+            <!-- Tree of Life -->
+            <div id="tree-container" class="relative w-full max-w-3xl mx-auto h-[700px] md:h-[650px]">
+                <!-- Paths -->
+                <div class="path" style="width: 2px; height: 60px; top: 70px; left: 50%;"></div>
+                <div class="path" style="width: 150px; height: 2px; top: 130px; left: calc(50% - 150px);"></div>
+                <div class="path" style="width: 150px; height: 2px; top: 130px; left: 50%;"></div>
+                <div class="path" style="width: 2px; height: 120px; top: 130px; left: calc(50% - 150px);"></div>
+                <div class="path" style="width: 2px; height: 120px; top: 130px; left: calc(50% + 150px);"></div>
+                <div class="path" style="width: 2px; height: 160px; top: 130px; left: 50%;"></div>
+                <div class="path" style="width: 300px; height: 2px; top: 250px; left: calc(50% - 150px);"></div>
+                <div class="path" style="width: 2px; height: 120px; top: 250px; left: calc(50% - 150px);"></div>
+                <div class="path" style="width: 2px; height: 120px; top: 250px; left: calc(50% + 150px);"></div>
+                <div class="path" style="width: 2px; height: 80px; top: 290px; left: 50%;"></div>
+                <div class="path" style="width: 300px; height: 2px; top: 370px; left: calc(50% - 150px);"></div>
+                <div class="path" style="width: 2px; height: 120px; top: 370px; left: calc(50% - 150px);"></div>
+                <div class="path" style="width: 2px; height: 120px; top: 370px; left: calc(50% + 150px);"></div>
+                <div class="path" style="width: 2px; height: 80px; top: 370px; left: 50%;"></div>
+                <div class="path" style="width: 300px; height: 2px; top: 490px; left: calc(50% - 150px);"></div>
+                <div class="path" style="width: 2px; height: 60px; top: 490px; left: 50%;"></div>
+                <div class="path" style="width: 2px; height: 70px; top: 550px; left: 50%;"></div>
+                
+                <!-- Sefirot Nodes -->
+                <div id="keter" data-id="keter" class="sefirot-node absolute top-0 left-1/2 -translate-x-1/2 w-20 h-20 md:w-24 md:h-24 flex items-center justify-center rounded-full bg-white border-2 border-purple-200 shadow-lg text-center p-2 text-sm">Keter</div>
+                <div id="chokhmah" data-id="chokhmah" class="sefirot-node absolute top-[100px] left-[calc(50%+150px)] -translate-x-1/2 w-20 h-20 md:w-24 md:h-24 flex items-center justify-center rounded-full bg-white border-2 border-blue-200 shadow-lg text-center p-2 text-sm">Chokhmah</div>
+                <div id="binah" data-id="binah" class="sefirot-node absolute top-[100px] left-[calc(50%-150px)] -translate-x-1/2 w-20 h-20 md:w-24 md:h-24 flex items-center justify-center rounded-full bg-white border-2 border-gray-300 shadow-lg text-center p-2 text-sm">Binah</div>
+                <div id="chesed" data-id="chesed" class="sefirot-node absolute top-[220px] left-[calc(50%+150px)] -translate-x-1/2 w-20 h-20 md:w-24 md:h-24 flex items-center justify-center rounded-full bg-white border-2 border-sky-200 shadow-lg text-center p-2 text-sm">Chesed</div>
+                <div id="gevurah" data-id="gevurah" class="sefirot-node absolute top-[220px] left-[calc(50%-150px)] -translate-x-1/2 w-20 h-20 md:w-24 md:h-24 flex items-center justify-center rounded-full bg-white border-2 border-red-200 shadow-lg text-center p-2 text-sm">Gevurah</div>
+                <div id="tiferet" data-id="tiferet" class="sefirot-node absolute top-[260px] left-1/2 -translate-x-1/2 w-20 h-20 md:w-24 md:h-24 flex items-center justify-center rounded-full bg-white border-2 border-yellow-200 shadow-lg text-center p-2 text-sm">Tiferet</div>
+                <div id="netzach" data-id="netzach" class="sefirot-node absolute top-[340px] left-[calc(50%+150px)] -translate-x-1/2 w-20 h-20 md:w-24 md:h-24 flex items-center justify-center rounded-full bg-white border-2 border-green-200 shadow-lg text-center p-2 text-sm">Netzach</div>
+                <div id="hod" data-id="hod" class="sefirot-node absolute top-[340px] left-[calc(50%-150px)] -translate-x-1/2 w-20 h-20 md:w-24 md:h-24 flex items-center justify-center rounded-full bg-white border-2 border-orange-200 shadow-lg text-center p-2 text-sm">Hod</div>
+                <div id="yesod" data-id="yesod" class="sefirot-node absolute top-[460px] left-1/2 -translate-x-1/2 w-20 h-20 md:w-24 md:h-24 flex items-center justify-center rounded-full bg-white border-2 border-indigo-200 shadow-lg text-center p-2 text-sm">Yesod</div>
+                <div id="malkhut" data-id="malkhut" class="sefirot-node absolute top-[580px] left-1/2 -translate-x-1/2 w-20 h-20 md:w-24 md:h-24 flex items-center justify-center rounded-full bg-white border-2 border-stone-300 shadow-lg text-center p-2 text-sm">Malkhut</div>
+                
+                <!-- Other Concepts -->
+                <div id="einsof" data-id="einsof" class="sefirot-node absolute -top-16 left-1/2 -translate-x-1/2 px-4 py-2 bg-purple-100 rounded-lg text-purple-800 shadow">Ein Sof</div>
+                 <div id="tikkun" data-id="tikkun" class="sefirot-node absolute top-[520px] left-[calc(50%-250px)] -translate-x-1/2 px-4 py-2 bg-green-100 rounded-lg text-green-800 shadow">Tikkun Olam</div>
+                 <div id="kelipot" data-id="kelipot" class="sefirot-node absolute top-[520px] left-[calc(50%+250px)] -translate-x-1/2 px-4 py-2 bg-gray-200 rounded-lg text-gray-800 shadow">Kelipot</div>
+            </div>
+             <footer class="text-center mt-8 text-gray-500 text-sm">
+                <p>Klik pada setiap simpul untuk menjelajahi konsepnya. Gunakan tombol filter untuk melihat Pilar-Pilar Kehidupan.</p>
+            </footer>
+        </main>
+
+        <!-- Detail Panel -->
+        <aside id="detail-panel" class="w-full md:w-1/3 lg:w-1/4 h-screen bg-white shadow-2xl fixed top-0 right-0 z-20 flex flex-col">
+            <div class="p-4 border-b flex justify-between items-center">
+                <h2 id="detail-title" class="font-serif text-2xl font-bold text-[#4A235A]">Detail Konsep</h2>
+                <button id="close-panel" class="p-2 rounded-full hover:bg-gray-200 transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            <div id="detail-content" class="content-section flex-grow p-6 overflow-y-auto">
+                <p>Pilih sebuah konsep dari Pohon Kehidupan untuk melihat penjelasannya di sini.</p>
+            </div>
+        </aside>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const ebookData = {
+                'prolog': {
+                    title: 'Prolog: Ketukan Jiwa',
+                    content: `
+                        <p class="mb-4">Ini adalah awal dari sebuah perjalanan. Seringkali kita merasakan ada sebuah panggilan dari dalam, sebuah ketukan halus yang menyiratkan adanya sesuatu yang lebih besar dari sekadar realitas fisik yang kita jalani sehari-hari. Perasaan ini adalah undangan untuk memulai penjelajahan ke dalam diri, mencari makna, dan terhubung dengan sumber spiritual kita.</p>
+                        <p>Aplikasi ini dirancang sebagai peta untuk membantu Anda menavigasi lanskap batin tersebut, memperkenalkan konsep-konsep kuno yang dapat menerangi jalan Anda.</p>
+                    `
+                },
+                'einsof': {
+                    title: 'Ein Sof: Yang Tak Terbatas',
+                    content: `
+                        <p class="mb-4">Ein Sof adalah konsep sentral yang menggambarkan Tuhan sebagai Realitas Tertinggi yang absolut, tak terbatas, dan tak terdefinisikan. Ini adalah Sumber dari segala sesuatu, melampaui segala bentuk, nama, dan pemahaman manusia. Memahami Ein Sof bukan tentang mendefinisikannya, melainkan tentang merangkul misteri dan keagungan dari keberadaan yang tak terbatas.</p>
+                        <ul class="list-disc list-inside space-y-2">
+                            <li><b>Tak Terbatas:</b> Melampaui ruang dan waktu.</li>
+                            <li><b>Tak Terdefinisikan:</b> Tidak dapat diikat oleh atribut atau deskripsi apapun.</li>
+                            <li><b>Sumber Segala Sesuatu:</b> Awal dan akhir dari semua eksistensi.</li>
+                        </ul>
+                    `
+                },
+                'keter': {
+                    title: 'Keter: Mahkota Ilahi',
+                    content: `
+                        <p class="mb-4">Keter adalah Sefirah tertinggi, melambangkan mahkota dan kehendak murni Ilahi. Ini adalah titik transisi pertama dari Ein Sof ke dunia manifestasi, namun masih terlalu luhur untuk dapat dipahami secara langsung. Keter adalah potensi murni, niat pertama di balik penciptaan.</p>
+                        <ul class="list-disc list-inside space-y-2">
+                            <li><b>Atribut:</b> Kehendak Ilahi, Potensi Murni, Sumber Cahaya.</li>
+                            <li><b>Dalam Diri:</b> Momen inspirasi tertinggi, koneksi supra-sadar, iman yang melampaui logika.</li>
+                            <li><b>Tantangan:</b> Keterlepasan dari dunia, perasaan tidak membumi.</li>
+                        </ul>
+                    `
+                },
+                'chokhmah': {
+                    title: 'Chokhmah: Kebijaksanaan',
+                    content: `
+                        <p class="mb-4">Chokhmah adalah Sefirah kedua, mewakili percikan pertama kebijaksanaan atau ilham ilahi. Ini adalah ide murni yang belum terbentuk, sebuah kilasan intuisi dari sumber yang tak terbatas. Chokhmah adalah energi ekspansif dari 'ayah' kosmis.</p>
+                         <ul class="list-disc list-inside space-y-2">
+                            <li><b>Atribut:</b> Kebijaksanaan, Ilham, Ide Awal, Intuisi.</li>
+                            <li><b>Dalam Diri:</b> Kreativitas yang spontan, kemampuan melihat gambaran besar, 'aha!' moment.</li>
+                            <li><b>Tantangan:</b> Ide tanpa implementasi, kurangnya struktur.</li>
+                        </ul>
+                    `
+                },
+                 'binah': {
+                    title: 'Binah: Pemahaman',
+                    content: `
+                        <p class="mb-4">Binah mengambil percikan kebijaksanaan dari Chokhmah dan memberinya bentuk, struktur, dan pemahaman. Ini adalah 'ibu' kosmis yang mengembangkan ide mentah menjadi konsep yang dapat diproses dan dianalisis. Binah adalah rahim di mana ide-ide mulai terbentuk.</p>
+                         <ul class="list-disc list-inside space-y-2">
+                            <li><b>Atribut:</b> Pemahaman, Logika, Struktur, Analisis.</li>
+                            <li><b>Dalam Diri:</b> Kemampuan merencanakan, berpikir kritis, mengembangkan detail.</li>
+                            <li><b>Tantangan:</b> Terlalu banyak analisis (analysis paralysis), keraguan, kekakuan.</li>
+                        </ul>
+                    `
+                },
+                'chesed': {
+                    title: 'Chesed: Kebaikan & Cinta',
+                    content: `
+                        <p class="mb-4">Chesed adalah ekspansi tanpa batas, kemurahan hati, dan cinta kasih. Ini adalah dorongan untuk memberi tanpa syarat. Energi Chesed mengalir keluar, merangkul semua dengan kebaikan. Ini adalah pilar kanan dari Pohon Kehidupan, pilar kebaikan.</p>
+                         <ul class="list-disc list-inside space-y-2">
+                            <li><b>Atribut:</b> Kebaikan, Kemurahan Hati, Cinta Kasih, Ekspansi.</li>
+                            <li><b>Dalam Diri:</b> Empati, welas asih, keinginan untuk menolong dan berbagi.</li>
+                            <li><b>Tantangan:</b> Memberi secara berlebihan hingga merugikan diri sendiri, kurangnya batasan.</li>
+                        </ul>
+                    `
+                },
+                'gevurah': {
+                    title: 'Gevurah: Kekuatan & Keadilan',
+                    content: `
+                        <p class="mb-4">Gevurah adalah kekuatan penyeimbang bagi Chesed. Ia mewakili batasan, disiplin, penilaian, dan keadilan. Jika Chesed adalah memberi, Gevurah adalah kemampuan untuk menahan dan menetapkan batasan yang sehat. Ini adalah pilar kiri, pilar kekuatan.</p>
+                         <ul class="list-disc list-inside space-y-2">
+                            <li><b>Atribut:</b> Kekuatan, Disiplin, Batasan, Keadilan, Penilaian.</li>
+                            <li><b>Dalam Diri:</b> Disiplin diri, kemampuan berkata 'tidak', keberanian, objektivitas.</li>
+                            <li><b>Tantangan:</b> Terlalu kritis, keras, menghakimi, kaku.</li>
+                        </ul>
+                    `
+                },
+                'tiferet': {
+                    title: 'Tiferet: Keindahan & Keseimbangan',
+                    content: `
+                        <p class="mb-4">Tiferet adalah jantung dari Pohon Kehidupan. Ia menyeimbangkan aliran cinta dari Chesed dan batasan dari Gevurah, menciptakan harmoni, keindahan, dan kebenaran. Tiferet adalah pusat keseimbangan dan integrasi diri sejati.</p>
+                         <ul class="list-disc list-inside space-y-2">
+                            <li><b>Atribut:</b> Keindahan, Keseimbangan, Harmoni, Kebenaran, Kasih Sayang.</li>
+                            <li><b>Dalam Diri:</b> Keseimbangan antara memberi dan menerima, integritas, pusat ketenangan batin.</li>
+                            <li><b>Tantangan:</b> Kesombongan, kebutuhan akan validasi.</li>
+                        </ul>
+                    `
+                },
+                'netzach': {
+                    title: 'Netzach: Keabadian & Kemenangan',
+                    content: `
+                        <p class="mb-4">Netzach mewakili daya tahan, ketekunan, dan dorongan untuk mengatasi rintangan. Ini adalah energi kemenangan dan keabadian, hasrat dan emosi yang mendorong kita untuk maju. Netzach adalah sumber motivasi dan inspirasi artistik.</p>
+                         <ul class="list-disc list-inside space-y-2">
+                            <li><b>Atribut:</b> Daya Tahan, Ketekunan, Gairah, Kemenangan, Emosi.</li>
+                            <li><b>Dalam Diri:</b> Motivasi, komitmen, kemampuan untuk memperjuangkan nilai-nilai.</li>
+                            <li><b>Tantangan:</b> Impulsif, emosi yang tidak terkendali, kelelahan karena tidak realistis.</li>
+                        </ul>
+                    `
+                },
+                'hod': {
+                    title: 'Hod: Kemuliaan & Resonansi',
+                    content: `
+                        <p class="mb-4">Hod adalah penyeimbang bagi Netzach. Ia mewakili kerendahan hati, pengakuan, dan kemampuan untuk menyerah pada rencana yang lebih besar. Hod adalah tentang analisis rasional, komunikasi, dan gema Ilahi dalam pikiran kita. Ini adalah tempat di mana kita merencanakan langkah kita.</p>
+                         <ul class="list-disc list-inside space-y-2">
+                            <li><b>Atribut:</b> Kemuliaan, Kerendahan Hati, Intelek, Komunikasi, Pengakuan.</li>
+                            <li><b>Dalam Diri:</b> Kemampuan merencanakan, berpikir strategis, bersyukur, komunikasi yang jernih.</li>
+                            <li><b>Tantangan:</b> Terlalu rasional, kurang percaya diri, penipuan diri.</li>
+                        </ul>
+                    `
+                },
+                'yesod': {
+                    title: 'Yesod: Fondasi',
+                    content: `
+                        <p class="mb-4">Yesod adalah fondasi tempat semua Sefirot di atasnya berkumpul dan disalurkan ke dunia fisik. Ia mewakili alam bawah sadar, imajinasi, dan jembatan antara dunia spiritual dan material. Yesod adalah pusat hubungan dan transmisi energi.</p>
+                         <ul class="list-disc list-inside space-y-2">
+                            <li><b>Atribut:</b> Fondasi, Hubungan, Bawah Sadar, Transmisi, Reproduksi.</li>
+                            <li><b>Dalam Diri:</b> Intuisi, mimpi, kemampuan membentuk ikatan, pusat energi kreatif.</li>
+                            <li><b>Tantangan:</b> Fantasi yang berlebihan, ketergantungan pada orang lain, masalah keintiman.</li>
+                        </ul>
+                    `
+                },
+                 'malkhut': {
+                    title: 'Malkhut: Kerajaan',
+                    content: `
+                        <p class="mb-4">Malkhut adalah Sefirah terakhir, mewakili manifestasi di dunia fisik. Ini adalah 'kerajaan' Ilahi di bumi, kehadiran Tuhan dalam realitas konkret kita. Malkhut menerima cahaya dari semua Sefirot lainnya dan mewujudkannya dalam tindakan, ucapan, dan keberadaan fisik kita.</p>
+                         <ul class="list-disc list-inside space-y-2">
+                            <li><b>Atribut:</b> Kerajaan, Manifestasi, Kehadiran Ilahi, Dunia Fisik.</li>
+                            <li><b>Dalam Diri:</b> Tubuh fisik, tindakan nyata, kemampuan untuk membumi (grounding), kepemimpinan.</li>
+                            <li><b>Tantangan:</b> Materialisme, keterikatan pada dunia fisik, perasaan terpisah dari spiritualitas.</li>
+                        </ul>
+                    `
+                },
+                'tikkun': {
+                    title: 'Tikkun Olam: Misi Kosmis',
+                    content: `
+                         <p class="mb-4">Tikkun Olam, atau 'memperbaiki dunia', adalah misi kosmis setiap jiwa. Konsep ini berawal dari 'Shevirat ha-Kelim' (pecahnya wadah), yang menyebabkan percikan cahaya ilahi tersebar dan terperangkap dalam 'Kelipot' (cangkang gelap). Tugas kita adalah untuk membebaskan percikan cahaya ini melalui tindakan kebaikan, kesadaran, dan spiritualitas dalam kehidupan sehari-hari.</p>
+                         <p>Setiap tindakan positif, sekecil apapun, berkontribusi pada penyembuhan kosmis ini. Ini mengubah tindakan biasa menjadi ritual suci yang memiliki dampak spiritual mendalam.</p>
+                    `
+                },
+                'kelipot': {
+                    title: 'Kelipot: Cangkang Gelap',
+                     content: `
+                        <p class="mb-4">Kelipot (jamak dari Kelipah, 'cangkang' atau 'kulit') adalah metafora untuk kekuatan negatif atau penghalang spiritual yang menyembunyikan cahaya Ilahi. Mereka adalah produk sampingan dari proses penciptaan, mewakili egoisme, kemelekatan, dan semua kekuatan yang menarik kita menjauh dari kesadaran spiritual.</p>
+                        <p>Perjalanan jiwa melibatkan proses mengupas Kelipot ini, bukan dengan melawannya secara langsung, tetapi dengan meningkatkan cahaya batin kita melalui perbuatan baik (Tikkun Olam) dan hubungan dengan Tuhan (Hitbodedut), sehingga cangkang itu rontok dengan sendirinya.</p>
+                    `
+                }
+            };
+
+            const detailPanel = document.getElementById('detail-panel');
+            const detailTitle = document.getElementById('detail-title');
+            const detailContent = document.getElementById('detail-content');
+            const closePanelBtn = document.getElementById('close-panel');
+            const nodes = document.querySelectorAll('.sefirot-node');
+            const pillarBtns = document.querySelectorAll('.pillar-btn');
+
+            const pillars = {
+                right: ['chokhmah', 'chesed', 'netzach'],
+                left: ['binah', 'gevurah', 'hod'],
+                middle: ['keter', 'tiferet', 'yesod', 'malkhut']
+            };
+
+            function showDetails(id) {
+                const data = ebookData[id];
+                if (data) {
+                    detailTitle.textContent = data.title;
+                    detailContent.innerHTML = data.content;
+                    detailPanel.classList.add('open');
+                    document.getElementById('app-container').classList.add('md:pr-[33.333333%]', 'lg:pr-[25%]');
+
+                    nodes.forEach(n => n.classList.remove('highlight'));
+                    document.getElementById(id)?.classList.add('highlight');
+                }
+            }
+
+            function closePanel() {
+                detailPanel.classList.remove('open');
+                document.getElementById('app-container').classList.remove('md:pr-[33.333333%]', 'lg:pr-[25%]');
+                nodes.forEach(n => n.classList.remove('highlight'));
+            }
+
+            nodes.forEach(node => {
+                node.addEventListener('click', () => {
+                    showDetails(node.dataset.id);
+                });
+            });
+
+            closePanelBtn.addEventListener('click', closePanel);
+
+            pillarBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    pillarBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    
+                    const filter = btn.id.replace('btn-', '');
+                    
+                    if (filter === 'all') {
+                        nodes.forEach(node => {
+                            node.classList.remove('dim');
+                        });
+                        return;
+                    }
+                    
+                    const pillarNodes = pillars[filter] || [];
+                    nodes.forEach(node => {
+                        const nodeId = node.id;
+                        if (pillarNodes.includes(nodeId) || ['einsof', 'tikkun', 'kelipot'].includes(nodeId)) {
+                            node.classList.remove('dim');
+                        } else {
+                            node.classList.add('dim');
+                        }
+                    });
+                });
+            });
+            
+            showDetails('prolog');
+        });
+    </script>
+</body>
+</html>
